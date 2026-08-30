@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Rena — Bolivianisches Spanisch</title>
+<meta name="description" content="Bolivianisches Spanisch lernen im Gespräch mit Rena — freihändig, mit Wörterbuch und Abfrage.">
+<meta name="theme-color" content="#141122">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rena">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+
+<div class="aguayo" aria-hidden="true"></div>
+
+<header class="appbar">
+  <div class="brand">
+    <span class="brand-dot" aria-hidden="true"></span>
+    <h1 id="view-title">Gespräch</h1>
+  </div>
+  <div class="appbar-actions" id="appbar-actions"></div>
+</header>
+
+<main id="main">
+
+  <!-- ══════════════ GESPRÄCH ══════════════ -->
+  <section class="view" id="view-chat" data-view="chat">
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="chat-list" id="chat-list"></div>
+    </div>
+
+    <div class="mic-dock" id="mic-dock">
+      <div class="mic-status" id="mic-status">
+        <span class="mic-state" id="mic-state-text">Mikrofon aus</span>
+        <div class="level-bar" aria-hidden="true"><div class="level-fill" id="level-fill"></div></div>
+      </div>
+
+      <div class="mic-row">
+        <button class="icon-btn" id="btn-keyboard" title="Tippen statt sprechen" aria-label="Tippen statt sprechen">⌨️</button>
+        <button class="mic-btn" id="btn-mic" aria-label="Mikrofon starten">
+          <span class="mic-glyph" aria-hidden="true">🎙️</span>
+          <span class="mic-ring" aria-hidden="true"></span>
+        </button>
+        <button class="icon-btn" id="btn-quiz-toggle" title="Abfrage-Modus" aria-label="Abfrage-Modus">🎯</button>
+      </div>
+
+      <form class="text-row" id="text-form" hidden>
+        <input type="text" id="text-input" placeholder="Schreib auf Deutsch oder Spanisch…" autocomplete="off" enterkeyhint="send">
+        <button type="submit" class="send-btn" aria-label="Senden">➤</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══════════════ WÖRTERBUCH ══════════════ -->
+  <section class="view" id="view-dict" data-view="dict" hidden>
+    <div class="dict-tools">
+      <input type="search" id="dict-search" placeholder="Suchen… (Spanisch oder Deutsch)" autocomplete="off">
+      <div class="chip-row" id="dict-filters">
+        <button class="chip is-on" data-filter="all">Alle</button>
+        <button class="chip" data-filter="due">Fällig</button>
+        <button class="chip" data-filter="word">Wörter</button>
+        <button class="chip" data-filter="phrase">Sätze</button>
+        <button class="chip" data-filter="bolivia">🇧🇴 Bolivien</button>
+      </div>
+    </div>
+    <div class="dict-list" id="dict-list"></div>
+  </section>
+
+  <!-- ══════════════ ABFRAGE ══════════════ -->
+  <section class="view" id="view-quiz" data-view="quiz" hidden>
+    <div class="quiz-wrap" id="quiz-wrap"></div>
+  </section>
+
+  <!-- ══════════════ EINSTELLUNGEN ══════════════ -->
+  <section class="view" id="view-settings" data-view="settings" hidden>
+    <div class="settings-wrap" id="settings-wrap"></div>
+  </section>
+
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab is-active" data-tab="chat"><span class="tab-ico">💬</span><span>Gespräch</span></button>
+  <button class="tab" data-tab="dict"><span class="tab-ico">📖</span><span>Wörterbuch</span><span class="tab-badge" id="badge-dict" hidden>0</span></button>
+  <button class="tab" data-tab="quiz"><span class="tab-ico">🎯</span><span>Abfrage</span><span class="tab-badge" id="badge-quiz" hidden>0</span></button>
+  <button class="tab" data-tab="settings"><span class="tab-ico">⚙️</span><span>Einstellungen</span></button>
+</nav>
+
+<!-- Sheet / Dialog Host -->
+<div class="sheet-host" id="sheet-host" hidden>
+  <div class="sheet-scrim" id="sheet-scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast-host" id="toast-host" aria-live="polite"></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
