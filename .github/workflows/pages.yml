@@ -1,8 +1,9 @@
 name: Auf GitHub Pages veröffentlichen
 
+# Veröffentlicht immer den Standard-Branch des Repositorys — egal, wie er heißt.
+# So funktioniert es sowohl jetzt (claude/…) als auch später auf main.
 on:
   push:
-    branches: [main, master]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,9 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.ref_name == github.event.repository.default_branch
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,7 +34,7 @@ jobs:
                    icons/icon-192.png icons/icon-512.png icons/apple-touch-icon.png; do
             test -f "$f" || { echo "Fehlt: $f"; exit 1; }
           done
-          node --check js/app.js
+          for f in $(find js -name '*.js') sw.js; do node --check "$f"; done
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
           echo "Alles da."
 

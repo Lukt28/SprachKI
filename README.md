@@ -38,20 +38,44 @@ Kosten, solange du kein Abrechnungskonto hinterlegst.
 
 ### 2. App veröffentlichen (einmalig)
 
-Die App braucht **HTTPS** — nur dann gibt iOS das Mikrofon frei. GitHub Pages macht das gratis:
+Die App braucht **HTTPS** — nur dann gibt iOS das Mikrofon frei. Ohne HTTPS bleibt der
+Mikrofonknopf wirkungslos, deshalb führt an diesem Schritt kein Weg vorbei.
 
-1. In diesem Repository auf **Settings → Pages** gehen.
-2. Unter *Build and deployment* bei **Source** → **GitHub Actions** auswählen.
-3. Fertig. Bei jedem Push auf `main` wird automatisch veröffentlicht.
+> ⚠️ **Dieses Repository ist derzeit privat.** GitHub Pages funktioniert für private
+> Repositories nur mit einem bezahlten Plan (GitHub Pro/Team). Wähle deshalb einen der
+> beiden folgenden Wege.
 
-Danach ist die App erreichbar unter:
+#### Weg A — Repository öffentlich schalten, dann GitHub Pages *(am einfachsten)*
+
+Im Code stecken keine Geheimnisse: Der API-Schlüssel wird ausschließlich im Speicher
+deines iPhones abgelegt und ist nie Teil des Repositorys. Öffentlich schalten ist also
+unbedenklich.
+
+1. **Settings → General →** ganz unten **Danger Zone → Change visibility → Public**.
+2. **Settings → Pages →** unter *Build and deployment* bei **Source** → **GitHub Actions**.
+3. **Actions →** Workflow *„Auf GitHub Pages veröffentlichen"* → **Run workflow**
+   (oder einfach den nächsten Commit abwarten).
+
+Danach läuft die App unter:
 
 ```
 https://lukt28.github.io/SprachKI/
 ```
 
-> Läuft die Entwicklung noch auf einem Zweig? Dann einmal nach `main` mergen —
-> die Veröffentlichung startet nur von `main` oder `master`.
+#### Weg B — Repository privat lassen, woanders veröffentlichen
+
+**Cloudflare Pages** und **Netlify** hosten auch private Repositories gratis mit HTTPS:
+
+1. Bei [Cloudflare Pages](https://pages.cloudflare.com) oder [Netlify](https://app.netlify.com)
+   mit dem GitHub-Konto anmelden.
+2. Dieses Repository auswählen.
+3. **Build command:** leer lassen · **Publish/Output directory:** `/` (Projektwurzel).
+   Die App braucht keinen Build-Schritt.
+4. Die vergebene `https://…`-Adresse verwenden.
+
+> **Zum Workflow:** Er veröffentlicht immer den **Standard-Branch** des Repositorys — egal
+> wie der heißt. Aktuell ist das `claude/bolivian-spanish-learning-app-esos2y`. Benennst du
+> ihn später in `main` um oder mergst dorthin, funktioniert es unverändert weiter.
 
 ### 3. Aufs iPhone legen
 
@@ -149,6 +173,8 @@ CSV für Excel oder Anki.
 | Problem | Ursache und Abhilfe |
 |---|---|
 | Mikrofon startet nicht | Nur über HTTPS möglich. Adresse muss mit `https://` beginnen. Zugriff in iPhone-Einstellungen → Safari → Mikrofon erlauben. |
+| Pages meldet „not available for private repos" | Repository öffentlich schalten (Weg A) oder auf Cloudflare Pages/Netlify ausweichen (Weg B). |
+| Workflow läuft, aber nichts erscheint | **Settings → Pages → Source** muss auf **GitHub Actions** stehen, nicht auf *Deploy from a branch*. |
 | Rena antwortet nicht | Kein oder falscher API-Schlüssel. Einstellungen → Schlüssel prüfen (mit 👁 anzeigen lassen). |
 | „Gratis-Kontingent aufgebraucht" | Tageslimit erreicht. Später weitermachen oder in den Einstellungen auf **Gemini 2.5 Flash Lite** wechseln. |
 | Keine Stimme zu hören | Klingelton-Schalter am iPhone prüfen. Fehlt die Stimme ganz: Bedienungshilfen → Vorlesen → Stimmen → Spanisch laden. |
