@@ -2,7 +2,7 @@
 
 import { el, openSheet, toast, splitWords, confirmSheet } from '../util.js';
 import { addVocab, updateVocab, removeVocab, settings } from '../store.js';
-import { lookup, GeminiError } from '../gemini.js';
+import { lookup, ProviderError } from '../providers/index.js';
 
 /**
  * @param {object}  o
@@ -65,7 +65,7 @@ export function openVocabSheet({ entry = null, draft = {}, sourceText = '', onSa
     lookupBtn.onclick = async () => {
       const term = esField.value.trim() || deField.value.trim();
       if (!term) { toast('Erst ein Wort eintragen.', 'err'); return; }
-      if (!settings.apiKey) { toast('Dafür fehlt der API-Schlüssel.', 'err'); return; }
+      if (!settings.apiKeys?.[settings.provider]) { toast('Dafür fehlt der API-Schlüssel.', 'err'); return; }
       const dir = esField.value.trim() ? 'es' : 'de';
       lookupBtn.disabled = true;
       lookupBtn.innerHTML = '<span>…</span><span>Rena schlägt nach</span>';
@@ -80,7 +80,7 @@ export function openVocabSheet({ entry = null, draft = {}, sourceText = '', onSa
         paint();
         toast('Ergänzt.', 'ok');
       } catch (err) {
-        toast(err instanceof GeminiError ? err.message : 'Nachschlagen fehlgeschlagen.', 'err');
+        toast(err instanceof ProviderError ? err.message : 'Nachschlagen fehlgeschlagen.', 'err');
       } finally {
         lookupBtn.disabled = false;
         lookupBtn.innerHTML = '<span>✨</span><span>Rena ergänzen lassen</span>';

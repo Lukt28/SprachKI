@@ -1,7 +1,7 @@
 // Service Worker: hält die App offline startklar.
 // Anfragen an Google werden bewusst nie zwischengespeichert.
 
-const VERSION = 'rena-v1';
+const VERSION = 'rena-v2';
 const SHELL = [
   './',
   './index.html',
@@ -11,7 +11,10 @@ const SHELL = [
   './js/util.js',
   './js/store.js',
   './js/persona.js',
-  './js/gemini.js',
+  './js/providers/index.js',
+  './js/providers/shared.js',
+  './js/providers/gemini.js',
+  './js/providers/openaiCompatible.js',
   './js/audio.js',
   './js/vad-worklet.js',
   './js/tts.js',

@@ -7,9 +7,11 @@ const K_VOCAB    = 'rena.vocab.v1';
 const K_HISTORY  = 'rena.history.v1';
 
 export const DEFAULT_SETTINGS = {
-  // KI
-  apiKey: '',
-  model: 'gemini-2.5-flash',
+  // KI — Schlüssel und Modelle je Anbieter, damit ein Wechsel nichts verliert
+  provider: 'gemini',
+  apiKeys:          { gemini: '', groq: '', mistral: '' },
+  models:           { gemini: '', groq: '', mistral: '' },
+  transcribeModels: { groq: '', mistral: '' },
   level: 'A2',
   correctionMode: 'gentle',      // off | gentle | strict
   germanShare: 'auto',           // much | auto | little
@@ -61,13 +63,38 @@ function write(key, value) {
 
 /* ═══════════════ Einstellungen ═══════════════ */
 
-export const settings = { ...DEFAULT_SETTINGS, ...read(K_SETTINGS, {}) };
+function loadSettings() {
+  const stored = read(K_SETTINGS, {});
+  const merged = {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    // Verschachtelte Felder zusammenführen, sonst fehlen neue Anbieter nach einem Update.
+    apiKeys:          { ...DEFAULT_SETTINGS.apiKeys,          ...(stored.apiKeys || {}) },
+    models:           { ...DEFAULT_SETTINGS.models,           ...(stored.models || {}) },
+    transcribeModels: { ...DEFAULT_SETTINGS.transcribeModels, ...(stored.transcribeModels || {}) },
+  };
+
+  // Aus der Zeit, als es nur Gemini gab: einzelnes apiKey/model übernehmen.
+  if (stored.apiKey && !merged.apiKeys.gemini) merged.apiKeys.gemini = stored.apiKey;
+  if (stored.model && !merged.models.gemini)   merged.models.gemini = stored.model;
+  delete merged.apiKey;
+  delete merged.model;
+
+  return merged;
+}
+
+export const settings = loadSettings();
 
 export function saveSettings(patch = {}) {
   Object.assign(settings, patch);
   write(K_SETTINGS, settings);
   applyTheme();
   document.dispatchEvent(new CustomEvent('settings:changed', { detail: patch }));
+}
+
+/** Setzt einen Wert in einer Gruppe wie apiKeys/models, ohne die anderen zu verlieren. */
+export function saveNested(group, key, value) {
+  saveSettings({ [group]: { ...settings[group], [key]: value } });
 }
 
 export function applyTheme() {

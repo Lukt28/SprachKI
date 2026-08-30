@@ -21,20 +21,39 @@ verhält sie sich wie eine normale iPhone-App.
 | ✍️ **Sanfte Korrekturen** | Fehler erscheinen als Notiz im Chat, nicht im gesprochenen Text — so bleibt das Gespräch ein Gespräch. |
 | 📖 **Wörterbuch** | Vokabeln und ganze Sätze aus dem Gespräch mit einem Tipp aufnehmen. Oder per Sprachbefehl. |
 | 🎯 **Abfrage** | Rena fragt dich freihändig im Gespräch ab — oder du übst still mit Karteikarten nach dem Leitner-System. |
+| 🔀 **Drei Anbieter** | Groq, Mistral oder Gemini — umschaltbar in den Einstellungen, ohne Datenverlust. |
 | 📴 **Offline startklar** | Wörterbuch und Abfrage funktionieren ohne Internet. Nur das Gespräch mit Rena braucht Netz. |
 
 ---
 
 ## Einrichten — vier Schritte
 
-### 1. Kostenlosen KI-Schlüssel holen
+### 1. Anbieter wählen und Schlüssel holen
 
-1. Auf dem iPhone (oder am Rechner) **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)** öffnen.
-2. Mit dem Google-Konto anmelden → **„Create API key"**.
-3. Den Schlüssel kopieren (er fängt mit `AIza…` an).
+Rena kann mit drei kostenlosen KI-Anbietern sprechen. Du wählst sie in den App-Einstellungen
+und kannst jederzeit wechseln — die Schlüssel der anderen bleiben dabei gespeichert.
 
-Der Gratis-Tarif von Google AI Studio reicht für tägliches Üben locker aus. Es entstehen keine
-Kosten, solange du kein Abrechnungskonto hinterlegst.
+| Anbieter | Gut daran | Zu bedenken |
+|---|---|---|
+| **Groq** | Sehr schnell, großzügiges Gratis-Kontingent, laut AGB **kein Training auf deinen Eingaben**. Kein Gewerbe-Nachweis. | Braucht zwei Aufrufe pro Antwort (erst Whisper zum Transkribieren, dann das Sprachmodell). Merkt man kaum. |
+| **Mistral** | Französischer Anbieter mit echten **Verbraucher-AGB** — für private Nutzung juristisch der sauberste Weg. | Ebenfalls zwei Aufrufe (Voxtral zum Transkribieren). Kleineres Gratis-Kontingent. |
+| **Google Gemini** | Beste Deutsch/Spanisch-Erkennung: versteht die Aufnahme direkt, ein Aufruf pro Antwort. | Beim ersten Besuch verlangt Google die Bestätigung, den Dienst **geschäftlich** zu nutzen. Im Gratis-Tarif wertet Google Eingaben zur Modellverbesserung aus. |
+
+Schlüssel holen — dauert überall etwa eine Minute, Kreditkarte braucht keiner:
+
+- **Groq:** [console.groq.com/keys](https://console.groq.com/keys) → *Create API Key*
+- **Mistral:** [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) → *Create new key*
+- **Gemini:** [aistudio.google.com/apikey](https://aistudio.google.com/apikey) → *Create API key*
+
+Dann in Rena: **Einstellungen → Anbieter** antippen, Schlüssel einfügen, auf
+**⇄ Verbindung testen** tippen. Der Test prüft in einem Rutsch, ob der Anbieter erreichbar ist,
+ob dein Schlüssel gilt und ob das gewählte Modell existiert.
+
+> **Warum der Verbindungstest wichtig ist:** Die App läuft ohne eigenen Server — sie ruft die
+> KI direkt aus deinem Browser auf. Dafür muss der Anbieter browserseitige Aufrufe erlauben
+> (CORS). Bei Gemini ist das gesichert; bei Groq und Mistral konnte ich es nicht selbst
+> nachprüfen. Der Test sagt dir in zwei Sekunden, ob es klappt. Falls nicht, meldet er das
+> ausdrücklich — dann nimm einen anderen Anbieter.
 
 ### 2. App veröffentlichen (einmalig)
 
@@ -87,7 +106,7 @@ Jetzt liegt Rena als Symbol auf dem Home-Bildschirm und startet ohne Safari-Leis
 
 ### 4. In der App einrichten
 
-1. **Einstellungen** → **Google-AI-Studio-Schlüssel** einfügen.
+1. **Einstellungen** → Anbieter wählen, Schlüssel einfügen, **⇄ Verbindung testen**.
 2. **Stimme** wählen und mit **▶︎ Anhören** testen.
    *Peruanisch oder kolumbianisch klingt dem bolivianischen Hochland am nächsten.*
    Fehlt eine spanische Stimme? → iPhone-Einstellungen → **Bedienungshilfen → Vorlesen → Stimmen → Spanisch** herunterladen.
@@ -159,11 +178,12 @@ CSV für Excel oder Anki.
 
 - **Wörterbuch, Gesprächsverlauf und Einstellungen** liegen ausschließlich im Speicher deines
   iPhones (`localStorage`). Es gibt keinen Server, kein Konto, kein Tracking.
-- **Der API-Schlüssel** wird nur lokal gespeichert und ausschließlich an Google geschickt.
-- **Sprachaufnahmen** gehen direkt von deinem iPhone an die Gemini-API und werden nirgends
-  zwischengespeichert. Wie Google damit umgeht, steht in den Nutzungsbedingungen von Google
-  AI Studio — im Gratis-Tarif werden Eingaben in der Regel zur Verbesserung der Modelle
-  ausgewertet. Sprich also nichts ins Mikrofon, was vertraulich bleiben soll.
+- **Die API-Schlüssel** werden nur lokal gespeichert und gehen ausschließlich an den jeweils gewählten Anbieter.
+- **Sprachaufnahmen** gehen direkt von deinem iPhone an den gewählten Anbieter und werden
+  nirgends zwischengespeichert. Was der Anbieter damit macht, ist unterschiedlich: **Groq**
+  trainiert laut AGB nicht auf deinen Eingaben, **Google** wertet sie im Gratis-Tarif in der
+  Regel zur Modellverbesserung aus. Sprich im Zweifel nichts ins Mikrofon, was vertraulich
+  bleiben soll.
 - Löschst du die Web-App vom Home-Bildschirm, ist auch das Wörterbuch weg. **Vorher sichern.**
 
 ---
@@ -175,7 +195,9 @@ CSV für Excel oder Anki.
 | Mikrofon startet nicht | Nur über HTTPS möglich. Adresse muss mit `https://` beginnen. Zugriff in iPhone-Einstellungen → Safari → Mikrofon erlauben. |
 | Pages meldet „not available for private repos" | Repository öffentlich schalten (Weg A) oder auf Cloudflare Pages/Netlify ausweichen (Weg B). |
 | Workflow läuft, aber nichts erscheint | **Settings → Pages → Source** muss auf **GitHub Actions** stehen, nicht auf *Deploy from a branch*. |
-| Rena antwortet nicht | Kein oder falscher API-Schlüssel. Einstellungen → Schlüssel prüfen (mit 👁 anzeigen lassen). |
+| Rena antwortet nicht | Kein oder falscher API-Schlüssel. Einstellungen → **⇄ Verbindung testen** sagt dir genau, woran es liegt. |
+| „Aus dem Browser nicht erreichbar" | Der Anbieter lässt keine direkten Aufrufe aus dem Browser zu (CORS). Wechsle in den Einstellungen den Anbieter. |
+| Google verlangt Gewerbe-Bestätigung | Das ist Googles Standardklausel für Entwickler-APIs. Wenn du sie nicht abgeben willst: Anbieter auf **Mistral** (Verbraucher-AGB) oder **Groq** umstellen. |
 | „Gratis-Kontingent aufgebraucht" | Tageslimit erreicht. Später weitermachen oder in den Einstellungen auf **Gemini 2.5 Flash Lite** wechseln. |
 | Keine Stimme zu hören | Klingelton-Schalter am iPhone prüfen. Fehlt die Stimme ganz: Bedienungshilfen → Vorlesen → Stimmen → Spanisch laden. |
 | Rena unterbricht sich selbst | Einstellungen → **Dazwischenreden erlaubt** ausschalten. Dann pausiert das Mikrofon, während sie spricht. |
@@ -205,7 +227,11 @@ js/
   app.js                Start und Navigation zwischen den Reitern
   store.js              Persistenz: Einstellungen, Wörterbuch, Verlauf, Leitner-Logik
   persona.js            Renas System-Prompt (bolivianisches Spanisch, Niveau, Abfrage)
-  gemini.js             Gemini-Client: Antwortschema, Fehlermeldungen, Modellliste
+  providers/            KI-Anbieter hinter einer gemeinsamen Schnittstelle
+    index.js            Verzeichnis, Auswahl, Verbindungstest
+    shared.js           Fehler, JSON-Auswertung, Nutzungszähler
+    gemini.js           Audio + Antwortschema in einem Aufruf
+    openaiCompatible.js Groq und Mistral: Transkription + Chat
   audio.js              Mikrofon, Sprach-/Pausenerkennung, WAV-Kodierung
   vad-worklet.js        AudioWorklet im Audio-Renderthread
   tts.js                Sprachausgabe über die iOS-Stimmen

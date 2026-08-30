@@ -7,7 +7,7 @@ import {
 } from '../store.js';
 import { VoiceEngine, keepAwake } from '../audio.js';
 import * as tts from '../tts.js';
-import { converse, GeminiError } from '../gemini.js';
+import { converse, ProviderError } from '../providers/index.js';
 import { greeting } from '../persona.js';
 import { openVocabSheet } from './vocabsheet.js';
 
@@ -127,7 +127,7 @@ async function toggleMic() {
   tts.unlock();                       // muss aus der Nutzerhandlung heraus geschehen
   setState('starting');
 
-  if (!settings.apiKey) {
+  if (!settings.apiKeys?.[settings.provider]) {
     setState('idle');
     toast('Erst den API-Schlüssel in den Einstellungen eintragen.', 'err');
     document.dispatchEvent(new CustomEvent('nav:go', { detail: 'settings' }));
@@ -248,7 +248,7 @@ async function sendTurn({ text, audio, silentUser = false }) {
 
   } catch (err) {
     thinking.remove();
-    const message = err instanceof GeminiError ? err.message : (err.message || 'Unbekannter Fehler.');
+    const message = err instanceof ProviderError ? err.message : (err.message || 'Unbekannter Fehler.');
     addSystemLine(`⚠️ ${message}`, true);
     toast(message, 'err');
   } finally {

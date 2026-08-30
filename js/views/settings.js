@@ -2,20 +2,16 @@
 
 import { $, el, toast, confirmSheet, openSheet } from '../util.js';
 import {
-  settings, saveSettings, DEFAULT_SETTINGS, vocab, vocabStats,
+  settings, saveSettings, saveNested, DEFAULT_SETTINGS, vocab, vocabStats,
   exportJson, exportCsv, importJson, replaceVocab, clearHistory,
 } from '../store.js';
 import * as tts from '../tts.js';
-import { listModels, usageToday, GeminiError } from '../gemini.js';
+import {
+  PROVIDER_LIST, getProvider, resolve, listModels, testConnection, usageToday, ProviderError,
+} from '../providers/index.js';
 
-const FALLBACK_MODELS = [
-  { id: 'gemini-2.5-flash',      label: 'Gemini 2.5 Flash — guter Standard' },
-  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite — am sparsamsten' },
-  { id: 'gemini-2.0-flash',      label: 'Gemini 2.0 Flash' },
-  { id: 'gemini-2.5-pro',        label: 'Gemini 2.5 Pro — am besten, kleines Kontingent' },
-];
-
-let modelOptions = null;
+// Geladene Modelllisten je Anbieter, damit der Wechsel nicht jedes Mal neu lädt.
+const modelCache = {};
 
 export function initSettings() {
   renderSettings();
@@ -92,9 +88,23 @@ export function renderSettings() {
 }
 
 function apiGroup() {
+  const provider = getProvider(settings.provider);
+  const { apiKey, model, transcribeModel } = resolve(settings);
+
+  /* Anbieterauswahl */
+  const chips = el('div', { class: 'chip-row' });
+  for (const p of PROVIDER_LIST) {
+    const chip = el('button', {
+      class: `chip${p.id === provider.id ? ' is-on' : ''}`, type: 'button', text: p.label,
+      onclick: () => { saveSettings({ provider: p.id }); renderSettings(); },
+    });
+    chips.append(chip);
+  }
+
+  /* Schlüssel */
   const key = el('input', {
-    class: 'field', type: 'password', value: settings.apiKey,
-    placeholder: 'AIza…', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false',
+    class: 'field', type: 'password', value: apiKey,
+    placeholder: provider.keyPlaceholder, autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false',
   });
   const reveal = el('button', { class: 'chip', type: 'button', text: '👁 Anzeigen' });
   reveal.onclick = () => {
@@ -103,61 +113,108 @@ function apiGroup() {
     reveal.textContent = hidden ? '🙈 Verbergen' : '👁 Anzeigen';
   };
   key.onchange = () => {
-    saveSettings({ apiKey: key.value.trim() });
-    modelOptions = null;
+    saveNested('apiKeys', provider.id, key.value.trim());
+    delete modelCache[provider.id];
     toast(key.value.trim() ? 'Schlüssel gespeichert.' : 'Schlüssel entfernt.');
   };
 
+  /* Verbindungstest */
+  const testResult = el('p', { class: 'field-hint' });
+  const testBtn = el('button', { class: 'chip', type: 'button', text: '⇄ Verbindung testen' });
+  testBtn.onclick = async () => {
+    testBtn.disabled = true;
+    testBtn.textContent = '… prüft';
+    testResult.textContent = '';
+    const res = await testConnection(settings);
+    testResult.innerHTML = '';
+    testResult.append(
+      el('b', { text: `${res.ok ? '✓' : '✗'} ${res.title} — `, style: `color:var(--${res.ok ? 'ok' : 'danger'})` }),
+      res.detail,
+    );
+    testBtn.disabled = false;
+    testBtn.textContent = '⇄ Verbindung testen';
+  };
+
+  /* Chat-Modell */
   const modelSel = el('select', { class: 'field' });
   const paintModels = () => {
-    const list = modelOptions || FALLBACK_MODELS;
+    const list = modelCache[provider.id] || provider.fallbackModels;
     modelSel.innerHTML = '';
-    if (!list.some(m => m.id === settings.model)) {
-      modelSel.append(el('option', { value: settings.model, text: `${settings.model} (aktuell)` }));
+    if (!list.some(m => m.id === model)) {
+      modelSel.append(el('option', { value: model, text: `${model} (aktuell)` }));
     }
     for (const m of list) modelSel.append(el('option', { value: m.id, text: m.label || m.id }));
-    modelSel.value = settings.model;
+    modelSel.value = model;
   };
   paintModels();
-  modelSel.onchange = () => { saveSettings({ model: modelSel.value }); toast(`Modell: ${modelSel.value}`); };
+  modelSel.onchange = () => { saveNested('models', provider.id, modelSel.value); toast(`Modell: ${modelSel.value}`); };
 
   const loadBtn = el('button', { class: 'chip', type: 'button', text: '↻ Verfügbare Modelle laden' });
   loadBtn.onclick = async () => {
     loadBtn.textContent = '… lädt';
     loadBtn.disabled = true;
     try {
-      const list = await listModels(settings.apiKey);
-      if (!list.length) throw new GeminiError('Keine passenden Modelle gefunden.');
-      modelOptions = list;
+      const list = await listModels(settings);
+      if (!list.length) throw new ProviderError('Keine passenden Modelle gefunden.');
+      modelCache[provider.id] = list;
       paintModels();
       toast(`${list.length} Modelle geladen.`, 'ok');
     } catch (err) {
-      toast(err instanceof GeminiError ? err.message : 'Konnte Modelle nicht laden.', 'err');
+      toast(err instanceof ProviderError ? err.message : 'Konnte Modelle nicht laden.', 'err');
     } finally {
       loadBtn.textContent = '↻ Verfügbare Modelle laden';
       loadBtn.disabled = false;
     }
   };
 
-  return group('KI-Zugang',
+  /* Transkriptionsmodell — nur bei Anbietern, die dafür einen zweiten Aufruf brauchen */
+  let transcribeRow = null;
+  if (provider.needsTranscription) {
+    const sel = el('select', { class: 'field' });
+    for (const m of provider.transcribeModels) {
+      sel.append(el('option', { value: m.id, text: m.label }));
+    }
+    sel.value = transcribeModel;
+    sel.onchange = () => saveNested('transcribeModels', provider.id, sel.value);
+    transcribeRow = el('div', { class: 'row stack' },
+      el('div', { class: 'row-label' },
+        el('b', { text: 'Spracherkennung' }),
+        el('span', { text: `${provider.label} nimmt Audio nicht direkt im Gespräch entgegen. Deine Aufnahme wird deshalb erst hiermit in Text umgewandelt — Deutsch und Spanisch erkennt es von selbst.` }),
+      ),
+      sel,
+    );
+  }
+
+  return group('KI-Anbieter',
     el('div', { class: 'row stack' },
       el('div', { class: 'row-label' },
-        el('b', { text: 'Google-AI-Studio-Schlüssel' }),
-        el('span', { text: 'Kostenlos unter aistudio.google.com/apikey. Der Schlüssel bleibt nur auf diesem iPhone gespeichert und geht direkt an Google.' }),
+        el('b', { text: 'Anbieter' }),
+        el('span', { text: provider.note }),
+      ),
+      chips,
+    ),
+    el('div', { class: 'row stack' },
+      el('div', { class: 'row-label' },
+        el('b', { text: `API-Schlüssel für ${provider.label}` }),
+        el('span', { text: 'Bleibt nur auf diesem iPhone gespeichert und geht ausschließlich an den gewählten Anbieter. Schlüssel anderer Anbieter bleiben erhalten, wenn du wechselst.' }),
       ),
       key,
-      el('div', { class: 'chip-row' }, reveal),
-      el('p', { class: 'field-hint', html:
-        'Schlüssel holen: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → „Create API key“.' }),
+      el('div', { class: 'chip-row' }, reveal, testBtn),
+      el('p', { class: 'field-hint' },
+        `${provider.keyHint} `,
+        el('a', { href: provider.keyUrl, target: '_blank', rel: 'noopener', text: provider.keyUrl.replace('https://', '') }),
+      ),
+      testResult,
     ),
     el('div', { class: 'row stack' },
       el('div', { class: 'row-label' },
         el('b', { text: 'Modell' }),
-        el('span', { text: `Heute schon ${usageToday()} Anfragen gestellt. Bei „Kontingent aufgebraucht“ hilft ein kleineres Modell.` }),
+        el('span', { text: `Heute schon ${usageToday()} Anfragen gestellt. Bei „Kontingent aufgebraucht" hilft ein kleineres Modell.` }),
       ),
       modelSel,
       el('div', { class: 'chip-row' }, loadBtn),
     ),
+    transcribeRow,
   );
 }
 
@@ -362,8 +419,14 @@ function aboutGroup() {
       el('button', {
         class: 'chip', text: 'Zurücksetzen',
         onclick: async () => {
-          if (!await confirmSheet({ title: 'Einstellungen zurücksetzen?', body: 'Der API-Schlüssel und dein Wörterbuch bleiben erhalten.', confirmLabel: 'Zurücksetzen' })) return;
-          saveSettings({ ...DEFAULT_SETTINGS, apiKey: settings.apiKey });
+          if (!await confirmSheet({ title: 'Einstellungen zurücksetzen?', body: 'Deine API-Schlüssel, die Modellwahl und dein Wörterbuch bleiben erhalten.', confirmLabel: 'Zurücksetzen' })) return;
+          saveSettings({
+            ...DEFAULT_SETTINGS,
+            provider: settings.provider,
+            apiKeys: settings.apiKeys,
+            models: settings.models,
+            transcribeModels: settings.transcribeModels,
+          });
           renderSettings();
           document.dispatchEvent(new CustomEvent('conversation:refresh'));
           toast('Zurückgesetzt.');

@@ -275,11 +275,14 @@ export class VoiceEngine extends EventTarget {
     for (const c of chunks) { merged.set(c, off); off += c.length; }
 
     const wav = encodeWav(resample(merged, rate), TARGET_RATE);
+    let cachedBase64 = null;
     this.dispatchEvent(new CustomEvent('utterance', {
       detail: {
-        base64: toBase64(wav),
+        bytes: wav,
         mimeType: 'audio/wav',
         durationMs: Math.round((total / rate) * 1000),
+        // Nur Gemini braucht base64 — für die anderen Anbieter wäre das verschenkte Arbeit.
+        get base64() { return (cachedBase64 ??= toBase64(wav)); },
       },
     }));
   }

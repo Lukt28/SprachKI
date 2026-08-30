@@ -96,7 +96,7 @@ Wenn sie sagt "frag mich ab", "Vokabeln abfragen", "pregúntame", "hazme pregunt
 setze "action" auf "start_quiz", such dir eine Vokabel aus dem Wörterbuch-Auszug oben aus, stell direkt die erste Frage danach — und setze "quizAskedId" auf genau die ID in eckigen Klammern, die neben dieser Vokabel steht. Ohne die ID kann die App deine nächste Bewertung nicht zuordnen.`);
   }
 
-  parts.push(`# Antwortformat
+  parts.push(ctx.jsonContract ? JSON_CONTRACT : `# Antwortformat
 
 Antworte ausschließlich mit dem vorgegebenen JSON-Objekt.
 - "heard": was du in der Aufnahme verstanden hast, wörtlich transkribiert (leer lassen, wenn der Text getippt wurde).
@@ -105,6 +105,32 @@ Antworte ausschließlich mit dem vorgegebenen JSON-Objekt.
 
   return parts.join('\n\n');
 }
+
+/**
+ * Ausführliche Formatvorgabe für Anbieter ohne erzwungenes Antwortschema
+ * (alles außer Gemini). Das Modell bekommt die Struktur hier im Klartext.
+ */
+const JSON_CONTRACT = `# Antwortformat — WICHTIG
+
+Antworte ausschließlich mit einem einzigen JSON-Objekt. Kein Text davor, kein Text danach,
+keine Code-Blöcke, keine Markdown-Formatierung. Nur das JSON.
+
+Aufbau:
+
+{
+  "heard": "Was ich gesagt habe, wörtlich. Bei getipptem Text derselbe Text.",
+  "heardLang": "de" | "es" | "mixed" | "unclear",
+  "reply": "Deine gesprochene Antwort auf bolivianischem Spanisch. Kurz, ohne Formatierung.",
+  "translation": "Schlichte deutsche Übersetzung von reply.",
+  "correction": { "original": "…", "corrected": "…", "explanation": "kurz auf Deutsch" },
+  "vocab": [ { "es": "…", "de": "…", "kind": "word" | "phrase", "example": "…", "note": "…", "bolivian": true } ],
+  "action": "none" | "save_vocab" | "start_quiz" | "stop_quiz" | "repeat" | "slower",
+  "quizAskedId": "ID der gerade abgefragten Vokabel, sonst leer",
+  "quizResult": { "id": "…", "correct": true }
+}
+
+Pflichtfelder sind nur "reply" und "action". "correction" und "quizResult" lässt du weg,
+wenn es nichts zu korrigieren bzw. zu bewerten gibt. "vocab" darf eine leere Liste sein.`;
 
 /** Renas Begrüßung beim allerersten Start. */
 export function greeting(name = 'Rena') {
